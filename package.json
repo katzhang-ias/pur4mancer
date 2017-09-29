@@ -1,0 +1,12 @@
+{
+  "name": "pur4mancer",
+  "version": "0.0.1",
+  "description": "A tiny automated performance tracer built on top of Puppeteer.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "kat@integralads.com",
+  "license": "ISC"
+}

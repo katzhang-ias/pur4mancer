@@ -6,6 +6,8 @@ let browser, page;
     page = await browser.newPage();
     await page.tracing.start({path: 'carsales.json', screenshots: true});
     await page.goto('https://www.motoring.com.au/?mike=pg');
+    await page.tracing.stop();
+    await browser.close();
 })().catch(async e => {
     await page.tracing.stop();
     await browser.close();

@@ -11,55 +11,42 @@ const testPageUrl = process.argv[3] || JLOAD_DEEP_XDOMAIN;
 
 async function getFramePerformanceData(frame) {
     const frameContext = frame.executionContext();
-    // const loadTime = await frameContext.evaluate(() => {
-    //     const perfData = window.performance.timing;
-    //     return perfData.loadEventEnd - perfData.navigationStart;
-    // });
-    let loadTime;
-    await frameContext.evaluate(async () => {
-        new Promise((resolve, reject) => {
-            try {
-                const perfData = window.performance.timing;
-                page.mainFrame().console.log('perfData.loadEventEnd', perfData.loadEventEnd);
-                console.log('perfData.navigationStart', perfData.navigationStart);
-                if (perfData.loadEventEnd && perfData.navigationStart && perfData.loadEventEnd - perfData.navigationStart > 0) {
-                    resolve(perfData.loadEventEnd - perfData.navigationStart);
-                }
-            } catch (e) { reject(e); };
-        })
-        .then(diff => loadTime = diff)
-        .catch(e => console.error(e));
+    const loadTime = await frameContext.evaluate(() => {
+        const perfData = window.performance.timing;
+        return perfData.loadEventEnd - perfData.navigationStart;
     });
     console.log(frame.url(), loadTime);
+    return Promise.resolve(loadTime);
 };
 
-async function traverseAllFrames(frame) {
-    const totalLoadTime = await getFramePerformanceData(frame);
+async function traverseAllFrames(frame, indent) {
+    // const totalLoadTime = getFramePerformanceData(frame);
+    // const loadTime = await frame.evaluate(() => {
+    //     const perfData = window.performance.timing;
+    // });
+    // console.log(indent + frame.url());
+    // console.log(`${indent}${frame.url()}: 'load time:' ${totalLoadTime}`);
     for (let child of frame.childFrames()) {
-        traverseAllFrames(child);
-    }
-}
-
-function upsertSlotData(componentsData) {
-    for (let slot in componentsData) {
-        for (let metric in componentsData[slot].data) {
-            if (!tmMetrics[slot]) tmMetrics[slot] = {};
-            if (!tmMetrics[slot][metric]) tmMetrics[slot][metric] = [];
-            tmMetrics[slot][metric].push(componentsData[slot].data[metric]);
-        }
+        await child.evaluate(() => {
+            const perf = window.performance.timing;
+            console.log(child.url(), perf.loadEventEnd - perf.navigationStart);
+            return Promise.resolve();
+        });
+        traverseAllFrames(child, indent + ' ');
+        return Promise.resolve();
     }
 }
 
 async function trace() {
     let browser, page;
     browser = await puppeteer.launch({
-        args: ['--shm-size=10gb'],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
         headless: false
-    }); // as of 0.11.0 of puppeteer timeout option doesn't work so have to catch the rejection exceeding default timeout
+    });
     page = await browser.newPage();
     await page.goto(testPageUrl);
     await page.waitFor(5*1000);
-    await traverseAllFrames(page.mainFrame());
+    traverseAllFrames(page.mainFrame(), '');
     await browser.close();
 }
 

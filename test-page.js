@@ -12,6 +12,7 @@ const TEST_PAGE = 'http://st.adsafecontrol.com/test/?tagtype=jload&tagtypeinput=
         console.log('request: ', r.url());
     });
     await page.waitFor(5*1000);
+    await page.goto('about:blank');
     await browser.close();
     console.log('close browser after 5 seconds.');
 })().catch(async e => {
